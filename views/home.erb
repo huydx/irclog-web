@@ -1,0 +1,9 @@
+<table border="1">
+  <% @rows.each do |r|%>
+    <tr>
+      <td><%= r[:date] %></td>
+      <td><%= r[:user] %></td>
+      <td><%= r[:content] %></td>
+    </tr> 
+  <% end %>
+</table>
