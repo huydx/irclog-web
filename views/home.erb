@@ -2,7 +2,7 @@
   <% @rows.each do |r|%>
     <tr>
       <td><%= r[:date] %></td>
-      <td><%= r[:user] %></td>
+      <td bgcolor="<%= r[:user][:color] %>"><%= r[:user][:name] %></td>
       <td><%= r[:content] %></td>
     </tr> 
   <% end %>
