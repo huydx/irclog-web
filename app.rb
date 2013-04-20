@@ -35,8 +35,11 @@ class IrcLog
   
   def color_format(rows)
     didx, uidx, cidx = @INDEXMAP["date"], @INDEXMAP["user"], @INDEXMAP["content"]
-    uniq_usr = rows.map{ |r| r[uidx]}.uniq
     color_hash_table = {}
+    ret = []
+
+    uniq_usr = rows.map{ |r| r[uidx]}.uniq
+
     idx = 0
     uniq_usr.each do |u|
       u_integer = 0
@@ -51,13 +54,30 @@ class IrcLog
       idx += 1
     end 
 
-    return rows.map do |r| 
-      { 
-        :date=>DateTime.parse(r[didx]).strftime("posted:[%Y %m %d %T]"), 
-        :user=>{:name=>r[uidx], :color=>color_hash_table[r[uidx]]}, 
-        :content=>r[cidx]
-      }
+    idx = 0
+    prev_day = ""
+    rows.each do |r|
+      p r
+      current_date =  DateTime.parse(r[didx])
+      current_day = current_date.day
+      prev_day = current_date.day if idx == 0
+
+      if (current_day - prev_day)!=0
+        ret.push(nil)
+      else
+        to_append = 
+        { 
+          :date=>current_date.strftime("posted:[%Y %m %d %T]"), 
+          :user=>{:name=>r[uidx], :color=>color_hash_table[r[uidx]]}, 
+          :content=>r[cidx]
+        }
+      end
+      
+      ret.push(to_append)
+      prev_day = current_day
+      idx += 1
     end 
+    return ret
   end
 end
 

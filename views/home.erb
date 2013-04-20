@@ -1,9 +1,13 @@
 <table border="1">
   <% @rows.each do |r|%>
-    <tr>
-      <td><%= r[:date] %></td>
-      <td bgcolor="<%= r[:user][:color] %>"><%= r[:user][:name] %></td>
-      <td><%= r[:content] %></td>
-    </tr> 
+    <% unless r.nil? %>
+      <tr>
+        <td><%= r[:date] %></td>
+        <td bgcolor="<%= r[:user][:color] %>"><%= r[:user][:name] %></td>
+        <td><%= r[:content] %></td>
+      </tr> 
+    <% else %>
+      <tr bgcolor="black"><td>xxxx</td><td>xxxx</td><td>xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</td></tr>
+    <% end %>
   <% end %>
 </table>
