@@ -22,7 +22,7 @@ class IrcLog
   end
  
   def get_rows_by_nday(n)
-    return @db.execute("select date, user, content from #{@table} where (date(date) >= date('now', '-#{n} day')) order by date(date) desc")
+    return @db.execute("select date, user, content from #{@table} where (date(date) > date('now', '-#{n} day')) order by date(date) desc")
   end
 
   def get_rows_all
