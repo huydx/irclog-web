@@ -60,3 +60,7 @@ get '/irc' do
 
   erb :home
 end
+
+get '/*' do
+  "go to /irc to see irc log"
+end
