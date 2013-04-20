@@ -1,14 +1,24 @@
 require 'rubygems'
 require 'sinatra'
 require 'sqlite3'
+require 'fileutils'
 
 set :port, 5000
 
 class IrcLog
+  @www_folder = "./"
+
   def initialize(dbname, table)
-    @db = SQLite3::Database.new("#{Dir.pwd}/#{dbname}")
     @table = table
+    
+    copy_db_to_local(dbname)
+
+    @db = SQLite3::Database.new("#{dbname}")
     @INDEXMAP = {"date"=>0, "user"=>1, "content"=>2}
+  end
+  
+  def copy_db_to_local(dbname)
+    FileUtils.cp(File.expand_path("~/Dropbox/db/")+"/#{dbname}", Dir.pwd)
   end
 
   def get_rows
