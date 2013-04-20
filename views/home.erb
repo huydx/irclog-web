@@ -6,13 +6,13 @@
   <option value="alldays" <%= 'selected' if @id == 4 %>>log of all days</option>
 </select>
 
-<table border="1">
+<table border="0">
   <% @rows.each do |r|%>
     <% unless r.nil? %>
       <tr>
-        <td><%= r[:date] %></td>
-        <td bgcolor="<%= r[:user][:color] %>"><%= r[:user][:name] %></td>
+        <td><font color="<%= r[:user][:color] %>"><%= r[:user][:name] %></font></td>
         <td><%= r[:content] %></td>
+        <td><%= r[:date] %></td>
       </tr> 
     <% else %>
       <tr bgcolor="black"><td>xxxx</td><td>xxxx</td><td>xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</td></tr>

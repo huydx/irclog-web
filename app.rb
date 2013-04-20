@@ -3,6 +3,7 @@ require 'sinatra'
 require 'sqlite3'
 require 'fileutils'
 
+set :bind, '0.0.0.0'
 set :port, 5000
 
 class IrcLog
@@ -22,7 +23,12 @@ class IrcLog
   end
  
   def get_rows_by_nday(n)
-    return @db.execute("select date, user, content from #{@table} where (date(date) > date('now', '-#{n} day')) order by date(date) desc")
+    didx = @INDEXMAP["date"]
+    dat = @db.execute("select date, user, content from #{@table} where (julianday(date(date)) = (julianday(date('now'))-#{n}+1)) order by date(date) desc")
+    return nil if dat[0].nil?
+
+    day = DateTime.parse(dat[0][didx]).strftime("%m/%d/%y")
+    return {:day=>day, :data=>dat} 
   end
 
   def get_rows_all
@@ -32,7 +38,7 @@ class IrcLog
   def simple_format(row)
     didx, uidx, cidx = @INDEXMAP["date"], @INDEXMAP["user"], @INDEXMAP["content"]
     #format date 
-    date = DateTime.parse(row[didx]).strftime("posted:[%Y %m %d %T]")
+    date = DateTime.parse(row[didx]).strftime("%T")
     
     return {:date=>date, :user=>row[uidx], :content=>row[cidx]} 
   end  
@@ -70,7 +76,7 @@ class IrcLog
       else
         to_append = 
         { 
-          :date=>current_date.strftime("posted:[%Y %m %d %T]"), 
+          :date=>current_date.strftime("%T"), 
           :user=>{:name=>r[uidx], :color=>color_hash_table[r[uidx]]}, 
           :content=>r[cidx]
         }
@@ -107,10 +113,14 @@ get '/irc/:id' do
   if day.nil?
     _rows = irc.get_rows_all()
   else
-    _rows = irc.get_rows_by_nday(day) 
+    ret = irc.get_rows_by_nday(day)
+    unless ret.nil?
+      _rows = ret[:data]
+      @day = ret[:day]
+    end
   end
-
-  @rows = irc.color_format(_rows)
+  
+  @rows = irc.color_format(_rows) unless _rows.nil?
 
   erb :home
 end
