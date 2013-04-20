@@ -62,5 +62,5 @@ get '/irc' do
 end
 
 get '/*' do
-  "go to /irc to see irc log"
+  redirect "/irc"
 end
