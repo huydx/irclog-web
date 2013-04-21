@@ -20,8 +20,12 @@ class IrcLog
   def copy_db_to_local(dbname)
     FileUtils.cp(File.expand_path("~/Dropbox/db/")+"/#{dbname}", Dir.pwd)
   end
+ 
+  def get_rows_by_nday(n)
+    return @db.execute("select date, user, content from #{@table} where (date(date) >= date('now', '-#{n} day')) order by date(date) desc")
+  end
 
-  def get_rows
+  def get_rows_all
     return @db.execute("select date, user, content from #{@table} order by date(date) desc")
   end
     
@@ -57,7 +61,6 @@ class IrcLog
     idx = 0
     prev_day = ""
     rows.each do |r|
-      p r
       current_date =  DateTime.parse(r[didx])
       current_day = current_date.day
       prev_day = current_date.day if idx == 0
@@ -81,16 +84,37 @@ class IrcLog
   end
 end
 
-get '/irc' do 
+get '/irc/:id' do 
+  @id = Integer(params[:id])
   @title = 'irc log bot'
   @rows = []
+
   irc = IrcLog.new("irclog.db", "chatlog")
-  _rows = irc.get_rows()
+  case @id
+  when 0
+    day = 0
+  when 1
+    day = 1
+  when 2 
+    day = 2
+  when 3
+    day = 7
+  when 4
+    day = nil
+  else
+    day = 0
+  end
+  if day.nil?
+    _rows = irc.get_rows_all()
+  else
+    _rows = irc.get_rows_by_nday(day) 
+  end
+
   @rows = irc.color_format(_rows)
 
   erb :home
 end
 
 get '/*' do
-  redirect "/irc"
+  redirect "/irc/0"
 end

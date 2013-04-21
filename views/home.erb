@@ -1,3 +1,11 @@
+<select id="timeoption">
+  <option value="today" <%= 'selected' if @id == 0 %>>log of today</option>
+  <option value="oneday" <%= 'selected' if @id == 1 %>>log of 1 day before</option>
+  <option value="twodays" <%= 'selected' if @id == 2 %>>log of 2 days before</option>
+  <option value="oneweek" <%= 'selected' if @id == 3 %>>log of one week before</option>
+  <option value="alldays" <%= 'selected' if @id == 4 %>>log of all days</option>
+</select>
+
 <table border="1">
   <% @rows.each do |r|%>
     <% unless r.nil? %>
@@ -11,3 +19,33 @@
     <% end %>
   <% end %>
 </table>
+
+<script type="text/javascript">
+  //0: today only
+  //1: 1 day before
+  //2: 2 days before
+  //3: 1 week before
+  //4: all days
+
+  var eSelect = document.getElementById('timeoption');
+  eSelect.onchange = function() {
+    switch(eSelect.selectedIndex) {
+      case(0):
+        window.location.href = "/irc/0";
+        break;
+      case(1):
+        window.location.href = "/irc/1";
+        break;
+      case(2):
+        window.location.href = "/irc/2";
+        break;
+      case(3):
+        window.location.href = "/irc/3";
+        break;
+      case(4):
+        window.location.href = "/irc/4";
+        break;
+      default:
+    } 
+  }
+</script>
