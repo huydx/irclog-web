@@ -6,6 +6,10 @@ require 'fileutils'
 set :bind, '0.0.0.0'
 set :port, 5000
 
+use Rack::Auth::Basic, "Restricted Area" do |usr, pw|
+  usr == ENV['SINATRA_IRC_USR'] and pw == ENV['SINATRA_IRC_PWD']
+end
+
 class IrcLog
   @www_folder = "./"
 
