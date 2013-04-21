@@ -1,0 +1,3 @@
+[submodule "pythonbot"]
+	path = pythonbot
+	url = git://github.com/DTVD/BatmanBot.git
