@@ -3,11 +3,15 @@ require 'sinatra'
 require 'sqlite3'
 require 'fileutils'
 
-set :bind, '0.0.0.0'
-set :port, 5000
-
+use Rack::Logger
 use Rack::Auth::Basic, "Restricted Area" do |usr, pw|
   usr == ENV['SINATRA_IRC_USR'] and pw == ENV['SINATRA_IRC_PWD']
+end
+
+helpers do
+  def logger
+    request.logger
+  end
 end
 
 class IrcLog
@@ -94,41 +98,50 @@ class IrcLog
   end
 end
 
-get '/irc/:id' do 
-  @id = Integer(params[:id])
-  @title = 'irc log bot'
-  @rows = []
-
-  irc = IrcLog.new("irclog.db", "chatlog")
-  case @id
-  when 0
-    day = 0
-  when 1
-    day = 1
-  when 2 
-    day = 2
-  when 3
-    day = 7
-  when 4
-    day = nil
-  else
-    day = 0
-  end
-  if day.nil?
-    _rows = irc.get_rows_all()
-  else
-    ret = irc.get_rows_by_nday(day)
-    unless ret.nil?
-      _rows = ret[:data]
-      @day = ret[:day]
-    end
-  end
+class IrcApp < Sinatra::Base
+  set :bind, '0.0.0.0'
+  set :port, 5000
   
-  @rows = irc.color_format(_rows) unless _rows.nil?
+  configure :production, :development do
+    enable :logging
+  end
 
-  erb :home
-end
+  get '/irc/:id' do 
+    @id = Integer(params[:id])
+    @title = 'irc log bot'
+    @rows = []
 
-get '/*' do
-  redirect "/irc/0"
+    irc = IrcLog.new("irclog.db", "chatlog")
+    case @id
+    when 0
+      day = 0
+    when 1
+      day = 1
+    when 2 
+      day = 2
+    when 3
+      day = 7
+    when 4
+      day = nil
+    else
+      day = 0
+    end
+    if day.nil?
+      _rows = irc.get_rows_all()
+    else
+      ret = irc.get_rows_by_nday(day)
+      unless ret.nil?
+        _rows = ret[:data]
+        @day = ret[:day]
+      end
+    end
+    
+    @rows = irc.color_format(_rows) unless _rows.nil?
+
+    erb :home
+  end
+
+  get '/*' do
+    redirect "/irc/0"
+  end
 end
