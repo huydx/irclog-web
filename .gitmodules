@@ -1,3 +1,6 @@
 [submodule "pythonbot"]
 	path = pythonbot
 	url = git://github.com/DTVD/BatmanBot.git
+[submodule "cppbot"]
+	path = cppbot
+	url = https://github.com/talzeus/ircbot.git
