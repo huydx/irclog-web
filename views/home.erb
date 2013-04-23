@@ -2,8 +2,8 @@
   <option value="today" <%= 'selected' if @id == 0 %>>log of today</option>
   <option value="oneday" <%= 'selected' if @id == 1 %>>log of 1 day before</option>
   <option value="twodays" <%= 'selected' if @id == 2 %>>log of 2 days before</option>
-  <option value="oneweek" <%= 'selected' if @id == 3 %>>log of one week before</option>
-  <option value="alldays" <%= 'selected' if @id == 4 %>>log of all days</option>
+  <option value="oneweek" <%= 'selected' if @id == 7 %>>log of one week before</option>
+  <option value="alldays" <%= 'selected' if @id == 101 %>>log of all days</option>
 </select>
 <a href="/irclive">中継ボットはこちら</a>
 <table border="0">
@@ -40,10 +40,10 @@
         window.location.href = "/irc/2";
         break;
       case(3):
-        window.location.href = "/irc/3";
+        window.location.href = "/irc/7";
         break;
       case(4):
-        window.location.href = "/irc/4";
+        window.location.href = "/irc/101";
         break;
       default:
     } 

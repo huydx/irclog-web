@@ -46,7 +46,7 @@ class IrcLog
     dat = @db.execute <<-SQL
       select date, user, content from #{@table} 
       where (julianday(date(date)) = (julianday(date('now'))-#{n}+1)) 
-      order by date(date) desc")
+      order by date(date) desc
     SQL
     return nil if dat[0].nil?
 
@@ -58,7 +58,7 @@ class IrcLog
     return @db.execute <<-SQL
       select date, user, content 
       from #{@table} 
-      order by date(date) desc")
+      order by date(date) desc
     SQL
   end
     
@@ -135,22 +135,11 @@ class IrcApp < Sinatra::Base
     @id = Integer(params[:id])
     @title = 'irc log bot'
     @rows = []
-
     irc = IrcLog.new("irclog.db", "chatlog")
-    case @id
-    when 0
-      day = 0
-    when 1
-      day = 1
-    when 2 
-      day = 2
-    when 3
-      day = 7
-    when 4
-      day = nil
-    else
-      day = 0
-    end
+
+    day = @id    
+    day = nil if @id >= 100 
+
     if day.nil?
       _rows = irc.get_rows_all()
     else
