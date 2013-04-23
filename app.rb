@@ -43,7 +43,11 @@ class IrcLog
 
   def get_rows_by_nday(n)
     didx = @INDEXMAP["date"]
-    dat = @db.execute("select date, user, content from #{@table} where (julianday(date(date)) = (julianday(date('now'))-#{n}+1)) order by date(date) desc")
+    dat = @db.execute <<-SQL
+      select date, user, content from #{@table} 
+      where (julianday(date(date)) = (julianday(date('now'))-#{n}+1)) 
+      order by date(date) desc")
+    SQL
     return nil if dat[0].nil?
 
     day = DateTime.parse(dat[0][didx]).strftime("%m/%d/%y")
@@ -51,7 +55,11 @@ class IrcLog
   end
 
   def get_rows_all
-    return @db.execute("select date, user, content from #{@table} order by date(date) desc")
+    return @db.execute <<-SQL
+      select date, user, content 
+      from #{@table} 
+      order by date(date) desc")
+    SQL
   end
     
   def simple_format(row)
