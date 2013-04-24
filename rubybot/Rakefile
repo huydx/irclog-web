@@ -22,7 +22,7 @@ task :setup_db do
       tag_id INTEGER NOT NULL
     );
 
-    CREATE TABLE sites (
+    CREATE TABLE tag(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name VARCHAR(255)
     );
