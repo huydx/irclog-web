@@ -31,16 +31,33 @@ class BookmarkSqlHelper < SqlHelper
   def add_bookmark(usr, url, tags=[])
     tag_ids = []
     unless tags.empty? 
-      tags.each {|t| @db.execute ("insert into tag name values(#{t})") }
-      tag_ids.push (@db.execute "select last_insert_rowid()")
+      tags.each do |t| 
+        @db.execute <<-SQL
+          insert into 
+          tag(name) 
+          values('#{t}')
+        SQL
+        tag_ids.push (@db.execute "select last_insert_rowid()").join("").to_i
+      end
     end
-    @db.execute ("insert into bookmark (url, user_name, time_created) (#{url}, #{usr}, datetime(now))")
-    bm_id = @db.execute "select last_insert_rowid()"
+
+    @db.execute <<-SQL
+      insert into 
+      bookmark(url, user_name, time_created) 
+      values('#{url}', '#{usr}', date(now))
+      where not exists (select 1 from bookmark where url='#{url}')
+    SQL
+
+    bm_id = (@db.execute "select last_insert_rowid()").join("").to_i
     
     unless tag_ids.empty?
-      tag_ids.each { |tid| 
-        @db.execute ("insert into tagmap (bookmark_id, tag_id) values(#{bm_id}, #{tid})") 
-      } 
+      tag_ids.each do |tid| 
+        @db.execute <<-SQL
+          insert into tagmap
+          (bookmark_id, tag_id)
+          values(#{bm_id}, #{tid})
+        SQL
+      end
     end
   end
 

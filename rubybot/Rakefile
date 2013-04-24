@@ -11,20 +11,24 @@ task :setup_db do
     CREATE TABLE bookmark (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       description VARCHAR(255),
-      url VARCHAR(255) NOT NULL,
+      url VARCHAR(255) UNIQUE NOT NULL,
       user_name VARCHAR(255) NOT NULL,
       time_created DATE
     );
+  SQL
    
+  db.execute <<-SQL
     CREATE TABLE tagmap(
       id INTEGER PRIMARY KEY,
       bookmark_id INTEGER NOT NULL,
       tag_id INTEGER NOT NULL
     );
+  SQL
 
+  db.execute <<-SQL
     CREATE TABLE tag(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name VARCHAR(255)
+      name VARCHAR(255) UNIQUE NOT NULL
     );
   SQL
 end
