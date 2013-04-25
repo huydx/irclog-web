@@ -29,10 +29,25 @@ class IrcLog
   def copy_db_to_local(dbname)
     FileUtils.cp(File.expand_path("~/Dropbox/db/")+"/#{dbname}", Dir.pwd)
   end
- 
+
+  def get_live_all()
+    rows = @db.execute <<-SQL
+      select date, user, content from #{@table}
+      where user like 'live%'
+      order by date(date) desc
+    SQL
+    return rows.map { |r|
+      {:user => r[1], :content=>r[2], :date=>r[0]}
+    } 
+  end
+
   def get_rows_by_nday(n)
     didx = @INDEXMAP["date"]
-    dat = @db.execute("select date, user, content from #{@table} where (julianday(date(date)) = (julianday(date('now'))-#{n}+1)) order by date(date) desc")
+    dat = @db.execute <<-SQL
+      select date, user, content from #{@table} 
+      where (julianday(date(date)) = (julianday(date('now'))-#{n}+1)) 
+      order by date(date) desc
+    SQL
     return nil if dat[0].nil?
 
     day = DateTime.parse(dat[0][didx]).strftime("%m/%d/%y")
@@ -40,7 +55,11 @@ class IrcLog
   end
 
   def get_rows_all
-    return @db.execute("select date, user, content from #{@table} order by date(date) desc")
+    return @db.execute <<-SQL
+      select date, user, content 
+      from #{@table} 
+      order by date(date) desc
+    SQL
   end
     
   def simple_format(row)
@@ -105,27 +124,22 @@ class IrcApp < Sinatra::Base
   configure :production, :development do
     enable :logging
   end
-
+  
+  get '/irclive' do
+    irc = IrcLog.new("irclog.db", "chatlog")
+    @rows = irc.get_live_all()
+    erb :live
+  end  
+  
   get '/irc/:id' do 
     @id = Integer(params[:id])
     @title = 'irc log bot'
     @rows = []
-
     irc = IrcLog.new("irclog.db", "chatlog")
-    case @id
-    when 0
-      day = 0
-    when 1
-      day = 1
-    when 2 
-      day = 2
-    when 3
-      day = 7
-    when 4
-      day = nil
-    else
-      day = 0
-    end
+
+    day = @id    
+    day = nil if @id >= 100 
+
     if day.nil?
       _rows = irc.get_rows_all()
     else
