@@ -8,10 +8,22 @@ task :setup_db do
   path = location + "/" + dbname
   db = SQLite3::Database.new(path) 
   db.execute <<-SQL
+    DROP TABLE IF EXISTS bookmark
+  SQL
+
+  db.execute <<-SQL
+    DROP TABLE IF EXISTS tag
+  SQL
+
+  db.execute <<-SQL
+    DROP TABLE IF EXISTS tagmap
+  SQL
+
+  db.execute <<-SQL
     CREATE TABLE bookmark (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       description VARCHAR(255),
-      url VARCHAR(255) UNIQUE NOT NULL,
+      url VARCHAR(255) NOT NULL,
       user_name VARCHAR(255) NOT NULL,
       time_created DATE
     );
