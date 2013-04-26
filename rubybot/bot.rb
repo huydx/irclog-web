@@ -1,21 +1,30 @@
 require 'cinch'
 require 'sqlite3'
 require 'ruby-debug'
+require 'yaml'
 
 server = "irc.freenode.org"
 channel = "#huydxcinch"
 
+#class to store all configuration
 module BmConfig
-  @dbname = ENV['CINCH_DBNAME']
-  @dblocation = File.expand_path("~/Dropbox/db/")
-
+  #config file must be in the same folder
+  @config = YAML.load_file("config.yml")
   def self.dbname
-    @dbname
+    @config["dbname"]
   end
 
   def self.dblocation
-    @dblocation
+    @config["dblocation"]
   end 
+
+  def self.ircserver
+    @config["ircserver"]
+  end
+
+  def self.ircchannel
+    @config["ircchannel"]
+  end
 end
 
 
@@ -86,8 +95,9 @@ class BookmarkSqlHelper < SqlHelper
     return (rows = @db.execute query)
   end
 
-  def get_bookmark_by_day(from, to) 
-
+  def get_bookmark_from_days_before(from) 
+    query = <<-SQL
+    SQL
   end
 
   def get_tags_all()
@@ -113,7 +123,7 @@ class TaskPlugin
   def initialize(*args)
     super
     dbname = BmConfig::dbname
-    dblocation = BmConfig::dblocation   
+    dblocation = File.expand_path(BmConfig::dblocation)
     @sql_helper = BookmarkSqlHelper.new({:db=>(dblocation+"/"+dbname)})
   end 
 
@@ -126,7 +136,7 @@ bot = Cinch::Bot.new do
   class << self
     def sql_helper
       dbname = BmConfig::dbname
-      dblocation = BmConfig::dblocation   
+      dblocation = File.expand_path(BmConfig::dblocation)
       BookmarkSqlHelper.new({:db=>(dblocation+"/"+dbname)})
     end
   end
@@ -138,8 +148,8 @@ bot = Cinch::Bot.new do
   bm_show_help = /^bm help$/                #example: bm help
 
   configure do |c|
-    c.server = server
-    c.channels = [channel]
+    c.server = BmConfig::ircserver
+    c.channels = [BmConfig::ircchannel]
     c.plugins.plugins = [TaskPlugin]
   end
 
@@ -166,6 +176,7 @@ bot = Cinch::Bot.new do
     usr = m.user.nick
 
     tags = mes.scan(bm_show_url_pattern).join("").split
+    tags.each {|t| m.reply "tags must be format as #something" and return if /^#(.*)/.match(t).nil? }
 
     bot = self.bot
     bm = bot.sql_helper.get_bookmark_by_tag(usr, tags)
