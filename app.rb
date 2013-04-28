@@ -155,6 +155,23 @@ class IrcApp < Sinatra::Base
     erb :home
   end
 
+  get '/ircurl' do
+    require "uri"
+
+    irc = IrcLog.new("irclog.db", "chatlog")
+
+    @rows = [] 
+    _rows = irc.get_rows_all()  
+    _rows.each { |r|
+      c = r[2] #sorry for hard code
+      @rows.push(r) unless c.scan(/(https?:\/\/([-\w\.]+)+(:\d+)?(\/([\w\/_\.]*(\?\S+)?)?)?)/) .empty?
+    }
+    t = irc.color_format(@rows)
+    @rows = t #to avoid @rows be modify on the fly
+  
+    erb :live
+  end
+
   get '/*' do
     redirect "/irc/0"
   end

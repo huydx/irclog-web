@@ -1,0 +1,12 @@
+<a href="/">戻る</a>
+<table border="0">
+  <% @rows.each do |r|%>
+    <% unless r.nil? %>
+      <tr>
+        <td><font color="red"><%= r[:user][:name] %></font></td>
+        <td><%= r[:content] %></td>
+        <td><%= r[:date] %></td>
+      </tr> 
+    <% end %>
+  <% end %>
+</table>
