@@ -3,9 +3,6 @@ require 'sqlite3'
 require 'ruby-debug'
 require 'yaml'
 
-server = "irc.freenode.org"
-channel = "#huydxcinch"
-
 #class to store all configuration
 module BmConfig
   #config file must be in the same folder
@@ -110,7 +107,24 @@ class BookmarkSqlHelper < SqlHelper
 end
 
 class TaskSqlHelper < SqlHelper
-  def get_task(usr)
+  def add_task_to_usr(desc, usr, date)
+    query <<-SQL
+      INSERT INTO task
+      (description, user_name, time)
+      VALUES(#{desc}, #{usr}, #{date})
+    SQL
+
+    @db.execute query
+  end
+  
+  def show_by_usr(usr)
+    query <<-SQL
+      SELECT t.description, t.time
+      FROM task t
+      WHERE t.usr_name = #{usr}
+    SQL
+
+    return (rows = @db.execute query)
   end
 end
 
@@ -124,7 +138,7 @@ class TaskPlugin
     super
     dbname = BmConfig::dbname
     dblocation = File.expand_path(BmConfig::dblocation)
-    @sql_helper = BookmarkSqlHelper.new({:db=>(dblocation+"/"+dbname)})
+    @sql_helper = TaskSqlHelper.new({:db=>(dblocation+"/"+dbname)})
   end 
 
   def check_tasks
@@ -134,10 +148,16 @@ end
 
 bot = Cinch::Bot.new do
   class << self
-    def sql_helper
+    def bookmark_sql_helper
       dbname = BmConfig::dbname
       dblocation = File.expand_path(BmConfig::dblocation)
       BookmarkSqlHelper.new({:db=>(dblocation+"/"+dbname)})
+    end
+    
+    def task_sql_helper
+      dbname = BmConfig::dbname
+      dblocation = File.expand_path(BmConfig::dblocation)
+      TaskSqlHelper.new({:db=>(dblocation+"/"+dbname)})
     end
   end
 
@@ -146,12 +166,24 @@ bot = Cinch::Bot.new do
   bm_show_url_pattern = /^bm show (.*)/     #example: bm show [#tag1] [#tag2]
   bm_show_tags_pattern = /^bm tags$/        #example: bm tags
   bm_show_help = /^bm help$/                #example: bm help
+  
+  task_add_pattern  = /^task add (.*)/            #example: task add [task-description] [user] (date(unix format) | days(from now))
+  task_show_user_pattern = /^task show (.*)/      #example: task show [username] 
+  task_delete_pattern  = /^task delete (.*)/      #example: task delete [taskid]
 
   configure do |c|
     c.server = BmConfig::ircserver
     c.channels = [BmConfig::ircchannel]
     c.plugins.plugins = [TaskPlugin]
   end
+  
+
+  #bookmark feature
+  #current function include
+  # -to add new url with tags   : bm add [url] [#tag1] [#tag2]
+  # -to delete an url           : bm delete [url]
+  # -to show url with tags      : bm show [#tag1] [#tag2]
+  # -to show all tags of system : bm tags
 
   on :message, bm_add_pattern do |m|
     #note: this function is in scope of Cinch::Handler, not Cinch::Bot
@@ -164,7 +196,7 @@ bot = Cinch::Bot.new do
     
     bot = self.bot
     begin 
-      bot.sql_helper.add_bookmark(usr, url, tags)
+      bot.bookmark_sql_helper.add_bookmark(usr, url, tags)
       m.reply "add done!"
     rescue
       m.reply "sql error!"
@@ -179,7 +211,7 @@ bot = Cinch::Bot.new do
     tags.each {|t| m.reply "tags must be format as #something" and return if /^#(.*)/.match(t).nil? }
 
     bot = self.bot
-    bm = bot.sql_helper.get_bookmark_by_tag(usr, tags)
+    bm = bot.bookmark_sql_helper.get_bookmark_by_tag(usr, tags)
     bm.each do |row|
       m.reply row.flatten.join(" ")
     end    
@@ -187,7 +219,7 @@ bot = Cinch::Bot.new do
 
   on :message, bm_show_tags_pattern do |m|
     bot = self.bot
-    rows = bot.sql_helper.get_tags_all().flatten
+    rows = bot.bookmark_sql_helper.get_tags_all().flatten
     m.reply rows.join(" ")
   end
 
@@ -202,6 +234,40 @@ bot = Cinch::Bot.new do
       -to show all tags of system : bm tags
     MES
     m.reply message
+  end
+
+  #task alarm feature
+  #current function include
+  # - task add [[task-descriotion]] [user] (date(unix format) | days(from now))
+  # - task show [username] 
+  # - task delete [taskid]
+  on :message, task_add_pattern do |m|
+    require 'date'
+
+    mes = m.params[1]
+    params = mes.scan(task_add_pattern).join("").split
+
+    desc = params[0]
+    user = params[1]
+    date = params[2].split("/") #[TODO] think about smarter way to get input date
+     
+    year, month, day = date.map{|e| e.to_i}
+    date_unix = DateTime.new(year, month, day).strftime("%Y-%m-%d %H:%M:%S")
+    bot.task_sql_helper.add_task_to_usr(desc, user, date_unix)
+  end
+
+  on :message, task_show_user do |m|
+    mes = m.params[1]  
+    user = mes.scan(task_show_user_pattern).flatten.join("")
+
+    rows = bot.task_sql_helper.show_by_usr(user)
+    rows.each { |r|
+      m.reply r.flatten.join("   ")
+    }
+  end
+
+  on :message, task_delete do |m|
+    #[TODO]
   end
 end
 

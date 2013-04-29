@@ -6,17 +6,30 @@ location = File.expand_path("~/Dropbox/db/")
 desc "create and setup sqlite3 db file"
 task :setup_db do 
   path = location + "/" + dbname
+
+  #create if not exist
   db = SQLite3::Database.new(path) 
+
   db.execute <<-SQL
-    DROP TABLE IF EXISTS bookmark
+    DROP TABLE IF EXISTS bookmark;
+  SQL
+  db.execute <<-SQL
+    DROP TABLE IF EXISTS tag;
+  SQL
+  db.execute <<-SQL
+    DROP TABLE IF EXISTS tagmap;
+  SQL
+  db.execute <<-SQL
+    DROP TABLE IF EXISTS task;
   SQL
 
   db.execute <<-SQL
-    DROP TABLE IF EXISTS tag
-  SQL
-
-  db.execute <<-SQL
-    DROP TABLE IF EXISTS tagmap
+    CREATE TABLE task (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      description VARCHAR(255),
+      user_name VARCHAR(255) NOT NULL,
+      time DATE
+    );
   SQL
 
   db.execute <<-SQL
