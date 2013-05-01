@@ -108,20 +108,38 @@ end
 
 class TaskSqlHelper < SqlHelper
   def add_task_to_usr(desc, usr, date)
-    query <<-SQL
+    query = <<-SQL
       INSERT INTO task
       (description, user_name, time)
-      VALUES(#{desc}, #{usr}, #{date})
+      VALUES('#{desc}', '#{usr}', '#{date}')
     SQL
-
     @db.execute query
   end
   
   def show_by_usr(usr)
-    query <<-SQL
+    query = <<-SQL
       SELECT t.description, t.time
       FROM task t
       WHERE t.usr_name = #{usr}
+    SQL
+
+    return (rows = @db.execute query)
+  end
+
+  def get_all_tasks()
+    query = <<-SQL
+      SELECT t.user_name, t.description, t.time
+      FROM task t
+    SQL
+
+    return (rows = @db.execute query)
+  end
+
+  def get_today_tasks()
+    query = <<-SQL
+      SELECT t.user_name, t.description, t.time
+      FROM task t
+      WHERE (julianday('now') - julianday(t.time)) < 1
     SQL
 
     return (rows = @db.execute query)
@@ -132,7 +150,7 @@ class TaskPlugin
   include Cinch::Plugin
   include BmConfig
 
-  timer 60, method: :check_tasks
+  timer 10, method: :check_tasks
 
   def initialize(*args)
     super
@@ -142,8 +160,13 @@ class TaskPlugin
   end 
 
   def check_tasks
-
+    
+    task = @sql_helper.get_today_tasks
+    task.each { |t| #[name, desc, time]
+      mes = "#{t[0]} has a task #{desc} at #{time}"
+    }
   end
+
 end
 
 bot = Cinch::Bot.new do
@@ -167,7 +190,7 @@ bot = Cinch::Bot.new do
   bm_show_tags_pattern = /^bm tags$/        #example: bm tags
   bm_show_help = /^bm help$/                #example: bm help
   
-  task_add_pattern  = /^task add (.*)/            #example: task add [task-description] [user] (date(unix format) | days(from now))
+  task_add_pattern  = /^task add \[(.*)\] (.*)/   #example: task add [task-description] [user] (date(unix format) | days(from now))
   task_show_user_pattern = /^task show (.*)/      #example: task show [username] 
   task_delete_pattern  = /^task delete (.*)/      #example: task delete [taskid]
 
@@ -243,20 +266,23 @@ bot = Cinch::Bot.new do
   # - task delete [taskid]
   on :message, task_add_pattern do |m|
     require 'date'
+    require 'debugger'
 
     mes = m.params[1]
-    params = mes.scan(task_add_pattern).join("").split
+    params = mes.scan(task_add_pattern).flatten
 
     desc = params[0]
-    user = params[1]
-    date = params[2].split("/") #[TODO] think about smarter way to get input date
-     
+    user = (params[1].split)[0]
+    date = (params[1].split)[1].split("/") #[TODO] think about smarter way to get input date
+
     year, month, day = date.map{|e| e.to_i}
+    m.reply "date format must be YYYY/MM/DD" and return unless (year & month & day)
+
     date_unix = DateTime.new(year, month, day).strftime("%Y-%m-%d %H:%M:%S")
     bot.task_sql_helper.add_task_to_usr(desc, user, date_unix)
   end
 
-  on :message, task_show_user do |m|
+  on :message, task_show_user_pattern do |m|
     mes = m.params[1]  
     user = mes.scan(task_show_user_pattern).flatten.join("")
 
@@ -266,7 +292,7 @@ bot = Cinch::Bot.new do
     }
   end
 
-  on :message, task_delete do |m|
+  on :message, task_delete_pattern do |m|
     #[TODO]
   end
 end
