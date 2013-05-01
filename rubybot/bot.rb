@@ -135,14 +135,25 @@ class TaskSqlHelper < SqlHelper
     return (rows = @db.execute query)
   end
 
-  def get_today_tasks()
+  def get_today_tasks_of_usr(usr)
+    query = <<-SQL
+      SELECT t.user_name, t.description, t.time
+      FROM task t
+      WHERE (julianday('now') - julianday(t.time)) < 1
+      WHERE t.user_name = #{usr}
+    SQL
+
+    return (rows = @db.execute query)
+  end
+
+  def get_near_task()
     query = <<-SQL
       SELECT t.user_name, t.description, t.time
       FROM task t
       WHERE (julianday('now') - julianday(t.time)) < 1
     SQL
 
-    return (rows = @db.execute query)
+    
   end
 end
 
@@ -160,11 +171,7 @@ class TaskPlugin
   end 
 
   def check_tasks
-    
-    task = @sql_helper.get_today_tasks
-    task.each { |t| #[name, desc, time]
-      mes = "#{t[0]} has a task #{desc} at #{time}"
-    }
+     
   end
 
 end
@@ -190,9 +197,11 @@ bot = Cinch::Bot.new do
   bm_show_tags_pattern = /^bm tags$/        #example: bm tags
   bm_show_help = /^bm help$/                #example: bm help
   
-  task_add_pattern  = /^task add \[(.*)\] (.*)/   #example: task add [task-description] [user] (date(unix format) | days(from now))
-  task_show_user_pattern = /^task show (.*)/      #example: task show [username] 
-  task_delete_pattern  = /^task delete (.*)/      #example: task delete [taskid]
+  task_add_pattern  = /^task add \[(.*)\] (.*) \[(.*)\]/    #example: task add [task-description] user [YYYY/MM/DD HHh] 
+  task_show_user_pattern = /^task show (.*)/                #example: task show [username] 
+  task_delete_pattern  = /^task delete (.*)/                #example: task delete [taskid]
+  task_show_today = /^task show today$/                     #example: task show today
+
 
   configure do |c|
     c.server = BmConfig::ircserver
@@ -272,13 +281,18 @@ bot = Cinch::Bot.new do
     params = mes.scan(task_add_pattern).flatten
 
     desc = params[0]
-    user = (params[1].split)[0]
-    date = (params[1].split)[1].split("/") #[TODO] think about smarter way to get input date
+    user = params[1]
+    date = (params[2].split)[0].split("/") #[TODO] think about smarter way to get input date
+    hour = (params[2].split)[1]
+    m.reply "hour format must be like 12h (end with h)" and return unless hour.end_with?("h")
+    hour = hour.chop #remove "h"
+    m.reply "hour must be number" and return unless /^[\d]+$/ === hour
 
     year, month, day = date.map{|e| e.to_i}
+
     m.reply "date format must be YYYY/MM/DD" and return unless (year & month & day)
 
-    date_unix = DateTime.new(year, month, day).strftime("%Y-%m-%d %H:%M:%S")
+    date_unix = DateTime.new(year, month, day, hour).strftime("%Y-%m-%d %H:%M:%S")
     bot.task_sql_helper.add_task_to_usr(desc, user, date_unix)
   end
 
@@ -289,6 +303,14 @@ bot = Cinch::Bot.new do
     rows = bot.task_sql_helper.show_by_usr(user)
     rows.each { |r|
       m.reply r.flatten.join("   ")
+    }
+  end
+  
+  on :message, task_show_today do |m|
+    tasks = bot.task_sql_helper.get_today_tasks_of_usr(m.user.nick)
+    tasks.each { |t|
+      mes = "#{t[0]} has a task #{t[1]} at #{t[2]}"
+      m.reply mes
     }
   end
 
