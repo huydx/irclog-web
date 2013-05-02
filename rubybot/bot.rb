@@ -107,6 +107,8 @@ class BookmarkSqlHelper < SqlHelper
 end
 
 class TaskSqlHelper < SqlHelper
+  require 'debugger'
+
   def add_task_to_usr(desc, usr, date)
     query = <<-SQL
       INSERT INTO task
@@ -120,7 +122,7 @@ class TaskSqlHelper < SqlHelper
     query = <<-SQL
       SELECT t.description, t.time
       FROM task t
-      WHERE t.usr_name = #{usr}
+      WHERE t.user_name = '#{usr}'
     SQL
 
     return (rows = @db.execute query)
@@ -139,7 +141,7 @@ class TaskSqlHelper < SqlHelper
     query = <<-SQL
       SELECT t.user_name, t.description, t.time
       FROM task t
-      WHERE (julianday('now') - julianday(t.time)) < 1
+      WHERE (julianday('now', 'localtime') - julianday(t.time)) < 1
       WHERE t.user_name = #{usr}
     SQL
 
@@ -216,6 +218,7 @@ bot = Cinch::Bot.new do
   task_show_user_pattern = /^task show (.*)/                #example: task show [username] 
   task_delete_pattern  = /^task delete (.*)/                #example: task delete [taskid]
   task_show_today = /^task show today$/                     #example: task show today
+  task_help = /^task help$/                                 #example: task help
 
 
   configure do |c|
@@ -314,6 +317,7 @@ bot = Cinch::Bot.new do
 
     date_unix = DateTime.new(year, month, day, hour).strftime("%Y-%m-%d %H:%M:%S")
     bot.task_sql_helper.add_task_to_usr(desc, user, date_unix)
+    m.reply "task added!"
   end
 
   on :message, task_show_user_pattern do |m|
@@ -336,6 +340,15 @@ bot = Cinch::Bot.new do
 
   on :message, task_delete_pattern do |m|
     #[TODO]
+  end
+
+  on :message, task_help do |m|
+    mes = <<-MESSAGE
+      - task add [[task-descriotion]] [user] (YYYY/MM/DD HHh)
+      - task show [username] 
+      - task delete [taskid]
+    MESSAGE
+    m.reply mes
   end
 end
 
