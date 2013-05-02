@@ -147,13 +147,20 @@ class TaskSqlHelper < SqlHelper
   end
 
   def get_near_task()
+    hours_to_get = 1
     query = <<-SQL
-      SELECT t.user_name, t.description, t.time
+      SELECT t.id, t.user_name, t.description, t.time
       FROM task t
-      WHERE (julianday('now') - julianday(t.time)) < 1
+      WHERE (julianday(t.time) - julianday('now', 'localtime')) < #{hours_to_get}.0/24
     SQL
+    return (rows = @db.execute query)
+  end
 
-    
+  def delete_by_task_id(id)
+    @db.execute <<-SQL
+      DELETE FROM task 
+      WHERE id = #{id} 
+    SQL
   end
 end
 
@@ -171,7 +178,15 @@ class TaskPlugin
   end 
 
   def check_tasks
-     
+    rows = @sql_helper.get_near_task()
+    recipient = Channel(@bot.config.channels[0])
+    unless rows.empty?
+      rows.each { |r| #[user, desc, time]
+        mes = "#{r[1]} has a task #{r[2]} at #{r[3]}" 
+        recipient.send(mes)
+        @sql_helper.delete_by_task_id(r[0])
+      }
+    end
   end
 
 end
@@ -240,7 +255,7 @@ bot = Cinch::Bot.new do
     usr = m.user.nick
 
     tags = mes.scan(bm_show_url_pattern).join("").split
-    tags.each {|t| m.reply "tags must be format as #something" and return if /^#(.*)/.match(t).nil? }
+    tags.each {|t| m.reply "tags must be format as #something" if /^#(.*)/.match(t).nil? }
 
     bot = self.bot
     bm = bot.bookmark_sql_helper.get_bookmark_by_tag(usr, tags)
@@ -276,21 +291,26 @@ bot = Cinch::Bot.new do
   on :message, task_add_pattern do |m|
     require 'date'
     require 'debugger'
+    begin
+      mes = m.params[1]
+      params = mes.scan(task_add_pattern).flatten
 
-    mes = m.params[1]
-    params = mes.scan(task_add_pattern).flatten
+      desc = params[0]
+      user = params[1]
+      date = (params[2].split)[0].split("/") #[TODO] think about smarter way 
+      hour = (params[2].split)[1]
+      
+      m.reply "hour format must be like 12h (end with h)" unless hour.end_with?("h")
+      hour = hour.chop #remove "h"
+      m.reply "hour must be number" unless /^[\d]+$/ === hour
+      hour = hour.to_i
 
-    desc = params[0]
-    user = params[1]
-    date = (params[2].split)[0].split("/") #[TODO] think about smarter way to get input date
-    hour = (params[2].split)[1]
-    m.reply "hour format must be like 12h (end with h)" and return unless hour.end_with?("h")
-    hour = hour.chop #remove "h"
-    m.reply "hour must be number" and return unless /^[\d]+$/ === hour
+      year, month, day = date.map{|e| e.to_i}
 
-    year, month, day = date.map{|e| e.to_i}
-
-    m.reply "date format must be YYYY/MM/DD" and return unless (year & month & day)
+      m.reply "date format must be YYYY/MM/DD" unless (year & month & day)
+    rescue
+      m.reply "there is something wrong with your format, please 'task help'"
+    end
 
     date_unix = DateTime.new(year, month, day, hour).strftime("%Y-%m-%d %H:%M:%S")
     bot.task_sql_helper.add_task_to_usr(desc, user, date_unix)
