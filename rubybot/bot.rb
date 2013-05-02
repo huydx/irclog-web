@@ -22,6 +22,10 @@ module BmConfig
   def self.ircchannel
     @config["ircchannel"]
   end
+
+  def self.botname
+    @config["botname"]
+  end
 end
 
 
@@ -120,7 +124,7 @@ class TaskSqlHelper < SqlHelper
   
   def show_by_usr(usr)
     query = <<-SQL
-      SELECT t.description, t.time
+      SELECT t.id, t.description, t.time
       FROM task t
       WHERE t.user_name = '#{usr}'
     SQL
@@ -224,6 +228,7 @@ bot = Cinch::Bot.new do
   configure do |c|
     c.server = BmConfig::ircserver
     c.channels = [BmConfig::ircchannel]
+    c.nick = BmConfig::botname
     c.plugins.plugins = [TaskPlugin]
   end
   
@@ -339,7 +344,14 @@ bot = Cinch::Bot.new do
   end
 
   on :message, task_delete_pattern do |m|
-    #[TODO]
+    mes = m.params[1]  
+    id = mes.scan(task_delete_pattern).flatten.join("").to_i
+    begin 
+      rows = bot.task_sql_helper.delete_by_task_id(id)
+    rescue
+      m.reply "sql error!"
+    end
+    m.reply "delete done!"
   end
 
   on :message, task_help do |m|
