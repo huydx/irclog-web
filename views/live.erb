@@ -3,7 +3,7 @@
   <% @rows.each do |r|%>
     <% unless r.nil? %>
       <tr>
-        <td><font color="red"><%= r[:user][:name] %></font></td>
+        <td><font color="red"><%= r[:user] %></font></td>
         <td><%= r[:content] %></td>
         <td><%= r[:date] %></td>
       </tr> 

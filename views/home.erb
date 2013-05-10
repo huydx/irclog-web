@@ -6,6 +6,7 @@
   <option value="alldays" <%= 'selected' if @id == 101 %>>log of all days</option>
 </select>
 <a href="/irclive">中継ボットはこちら</a>
+<a href="/ircurl">urlあるメッセージ</a>
 <table border="0">
   <% @rows.each do |r|%>
     <% unless r.nil? %>

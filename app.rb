@@ -34,7 +34,6 @@ class IrcLog
     rows = @db.execute <<-SQL
       select date, user, content from #{@table}
       where user like 'live%'
-      order by date(date) desc
     SQL
     return rows.map { |r|
       {:user => r[1], :content=>r[2], :date=>r[0]}
@@ -45,7 +44,7 @@ class IrcLog
     didx = @INDEXMAP["date"]
     dat = @db.execute <<-SQL
       select date, user, content from #{@table} 
-      where (julianday(date(date)) = (julianday(date('now'))-#{n}+1)) 
+      where (julianday(date(date)) = (julianday(date('now', 'localtime'))-#{n})) 
       order by date(date) desc
     SQL
     return nil if dat[0].nil?
