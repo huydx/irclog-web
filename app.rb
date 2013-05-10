@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'rubygems'
 require 'sinatra'
 require 'sqlite3'
@@ -96,6 +97,8 @@ class IrcLog
       current_date =  DateTime.parse(r[didx])
       current_day = current_date.day
       prev_day = current_date.day if idx == 0
+
+      next if r[uidx].include?("bot")       
 
       if (current_day - prev_day)!=0
         ret.push(nil)
